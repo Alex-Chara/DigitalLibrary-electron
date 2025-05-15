@@ -118,7 +118,6 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
   };
 
   const handleLocationChanged = (loc: string) => {
-    // Validate location before processing
     if (!loc || typeof loc !== 'string') {
       console.warn('Invalid location received:', loc);
       return;
@@ -140,7 +139,6 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
       }
     } catch (error) {
       console.error('Error processing location:', error);
-      // Don't update state if there's an error
     }
   };
 
@@ -187,7 +185,6 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
               rendition.display(location);
             } catch (error) {
               console.error('Error displaying location:', error);
-              // Reset location if invalid
               setLocation(null);
             }
           }
@@ -289,7 +286,7 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-white dark:bg-gray-900 z-[100] flex">
+    <div className={`fixed inset-0 ${theme === 'dark' ? 'bg-gray-900' : theme === 'sepia' ? 'bg-amber-50' : 'bg-white'} z-[100] flex`}>
       {/* Sidebar */}
       <div className={`w-72 bg-white dark:bg-gray-800 border-r dark:border-gray-700 transform transition-transform ${
         showSidebar ? 'translate-x-0' : '-translate-x-full'
@@ -586,7 +583,7 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
           </button>
         </div>
         
-        <div className="flex-1 overflow-hidden relative">
+        <div className={`flex-1 overflow-hidden relative ${theme === 'dark' ? 'bg-gray-900' : theme === 'sepia' ? 'bg-amber-50' : 'bg-white'}`}>
           {book.format === 'epub' && epubFile ? (
             <div style={{ position: 'relative', height: '100%' }}>
               <ReactReader
