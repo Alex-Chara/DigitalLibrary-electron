@@ -9,15 +9,15 @@ function App() {
   
   return (
     <BrowserRouter>
-      <div className={`min-h-screen ${theme === 'dark' ? 'dark' : ''}`}>
-        <div className={`min-h-screen ${
-          theme === 'dark' ? 'bg-gray-900' : theme === 'sepia' ? 'bg-amber-50' : 'bg-gray-100'
-        }`}>
-          {!selectedBook && <Header />}
-          <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${!selectedBook ? 'pt-24' : ''}`}>
-            <BookGrid />
-          </main>
-        </div>
+      <div className={`min-h-screen ${
+        selectedBook
+          ? (theme === 'dark' ? 'dark bg-gray-900' : theme === 'sepia' ? 'bg-amber-50' : 'bg-white')
+          : (theme === 'dark' ? 'dark bg-gray-900' : theme === 'sepia' ? 'bg-amber-50' : 'bg-gray-100')
+      }`}>
+        {!selectedBook && <Header />}
+        <main className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 ${!selectedBook ? 'pt-24' : ''}`}>
+          <BookGrid />
+        </main>
       </div>
     </BrowserRouter>
   );
