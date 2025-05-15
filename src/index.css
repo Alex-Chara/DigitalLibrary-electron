@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .grid-view {
+    @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6;
+  }
+  
+  .list-view {
+    @apply space-y-4;
+  }
+  
+  .list-view > div {
+    @apply hover:bg-gray-50 dark:hover:bg-gray-700/50;
+  }
+}
+
+/* PDF Reader Styles */
+.pdf-page-wrapper {
+  background: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  will-change: transform;
+}
+
+.pdf-page {
+  display: block;
+  margin: 0 auto;
+  image-rendering: high-quality;
+  transform: translateZ(0);
+}
+
+.pdf-text-layer {
+  z-index: 2;
+  opacity: 0.2;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.pdf-text-layer > div {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  contain: content;
+}
+
+.pdf-text-layer ::selection {
+  background: rgba(0, 0, 255, 0.2);
+}
+
+/* Dark mode styles for PDF */
+.dark .pdf-page-wrapper {
+  background: #374151;
+}
+
+.dark .pdf-text-layer ::selection {
+  background: rgba(147, 197, 253, 0.3);
+}
+
+/* EPUB Reader Styles */
+.epub-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: white;
+}
+
+.epub-container iframe {
+  border: none;
+  width: 100%;
+  height: 100%;
+}
+
+/* React Reader Styles */
+.reader-container {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  background: white;
+}
+
+.epub-view {
+  height: 100% !important;
+}
+
+:root {
+  @apply antialiased;
+}
+
+.dark {
+  color-scheme: dark;
+}
