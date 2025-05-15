@@ -118,15 +118,29 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
   };
 
   const handleLocationChanged = (loc: string) => {
-    setLocation(loc);
-    if (renditionRef.current && renditionRef.current.book) {
-      const locations = renditionRef.current.book.locations;
-      if (locations && locations.length() > 0) {
-        const currentLocation = locations.locationFromCfi(loc);
-        const totalLocations = locations.length();
-        setCurrentPage(Math.ceil((currentLocation / totalLocations) * 100));
-        setTotalPages(100);
+    // Validate location before processing
+    if (!loc || typeof loc !== 'string') {
+      console.warn('Invalid location received:', loc);
+      return;
+    }
+
+    try {
+      setLocation(loc);
+      
+      if (renditionRef.current?.book) {
+        const locations = renditionRef.current.book.locations;
+        if (locations?.length() > 0) {
+          const currentLocation = locations.locationFromCfi(loc);
+          const totalLocations = locations.length();
+          if (typeof currentLocation === 'number' && typeof totalLocations === 'number') {
+            setCurrentPage(Math.ceil((currentLocation / totalLocations) * 100));
+            setTotalPages(100);
+          }
+        }
       }
+    } catch (error) {
+      console.error('Error processing location:', error);
+      // Don't update state if there's an error
     }
   };
 
@@ -169,18 +183,30 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
       rendition.book.ready.then(() => {
         rendition.book.locations.generate().then(() => {
           if (location) {
-            rendition.display(location);
+            try {
+              rendition.display(location);
+            } catch (error) {
+              console.error('Error displaying location:', error);
+              // Reset location if invalid
+              setLocation(null);
+            }
           }
         });
       });
     });
 
     rendition.on('relocated', (location: any) => {
-      if (location && rendition.book.locations.length() > 0) {
-        const currentLocation = rendition.book.locations.locationFromCfi(location.start.cfi);
-        const totalLocations = rendition.book.locations.length();
-        setCurrentPage(Math.ceil((currentLocation / totalLocations) * 100));
-        setTotalPages(100);
+      try {
+        if (location?.start?.cfi && rendition.book.locations.length() > 0) {
+          const currentLocation = rendition.book.locations.locationFromCfi(location.start.cfi);
+          const totalLocations = rendition.book.locations.length();
+          if (typeof currentLocation === 'number' && typeof totalLocations === 'number') {
+            setCurrentPage(Math.ceil((currentLocation / totalLocations) * 100));
+            setTotalPages(100);
+          }
+        }
+      } catch (error) {
+        console.error('Error handling relocation:', error);
       }
     });
 
