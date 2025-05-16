@@ -20,7 +20,7 @@ export const useLibraryStore = create<LibraryState>((set) => ({
       return state;
     }
     
-    return { books: [...state.books, { ...book, notes: [], lastLocation: null }] };
+    return { books: [...state.books, { ...book, notes: [] }] };
   }),
   removeBook: (bookId) => set((state) => ({
     books: state.books.filter((book) => book.id !== bookId),
@@ -32,16 +32,6 @@ export const useLibraryStore = create<LibraryState>((set) => ({
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSortBy: (sortBy) => set({ sortBy }),
   setSortDirection: (direction) => set({ sortDirection }),
-  updateBookProgress: (bookId, progress, lastLocation) => set((state) => ({
-    books: state.books.map((book) =>
-      book.id === bookId
-        ? { ...book, progress, lastLocation }
-        : book
-    ),
-    selectedBook: state.selectedBook?.id === bookId
-      ? { ...state.selectedBook, progress, lastLocation }
-      : state.selectedBook
-  })),
   addNote: (bookId, note) => set((state) => ({
     books: state.books.map((book) => 
       book.id === bookId
