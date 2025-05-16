@@ -53,7 +53,7 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
   const renditionRef = useRef<any>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
-  const [location, setLocation] = useState<string | null>(book.lastLocation || null);
+  const [location, setLocation] = useState<string | null>(null);
   const [fontSize, setFontSize] = useState(100);
   const [fontFamily, setFontFamily] = useState(fontFamilies[0].value);
   const [lineHeight, setLineHeight] = useState(1.5);
@@ -67,7 +67,7 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [editingInlineNoteId, setEditingInlineNoteId] = useState<string | null>(null);
   const [inlineNoteContent, setInlineNoteContent] = useState('');
-  const { theme, addNote, removeNote, editNote, updateBookProgress } = useLibraryStore();
+  const { theme, addNote, removeNote, editNote } = useLibraryStore();
 
   useEffect(() => {
     if (book.format === 'epub') {
@@ -75,8 +75,6 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
         .then(response => response.arrayBuffer())
         .then(buffer => setEpubFile(buffer))
         .catch(error => console.error('Ошибка загрузки EPUB:', error));
-    } else if (book.format === 'pdf' && book.progress > 0) {
-      setCurrentPage(Math.max(1, Math.round(book.progress)));
     }
   }, [book]);
 
@@ -87,7 +85,6 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
       try {
         const { total } = await renderPdf(book.file, containerRef.current!, currentPage);
         setTotalPages(total);
-        updateBookProgress(book.id, currentPage, String(currentPage));
       } catch (error) {
         console.error('Ошибка инициализации:', error);
       }
@@ -98,16 +95,10 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
 
   const handlePageChange = (direction: 'prev' | 'next') => {
     if (book.format === 'pdf') {
-      let newPage = currentPage;
       if (direction === 'prev' && currentPage > 1) {
-        newPage = currentPage - 1;
+        setCurrentPage(currentPage - 1);
       } else if (direction === 'next' && currentPage < totalPages) {
-        newPage = currentPage + 1;
-      }
-      
-      if (newPage !== currentPage) {
-        setCurrentPage(newPage);
-        updateBookProgress(book.id, newPage, String(newPage));
+        setCurrentPage(currentPage + 1);
       }
     } else if (book.format === 'epub' && renditionRef.current) {
       if (direction === 'prev') {
@@ -127,6 +118,7 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
   };
 
   const handleLocationChanged = (loc: string) => {
+    // Validate location before processing
     if (!loc || typeof loc !== 'string') {
       console.warn('Invalid location received:', loc);
       return;
@@ -134,7 +126,6 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
 
     try {
       setLocation(loc);
-      updateBookProgress(book.id, 0, loc);
       
       if (renditionRef.current?.book) {
         const locations = renditionRef.current.book.locations;
@@ -142,15 +133,14 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
           const currentLocation = locations.locationFromCfi(loc);
           const totalLocations = locations.length();
           if (typeof currentLocation === 'number' && typeof totalLocations === 'number') {
-            const progress = Math.ceil((currentLocation / totalLocations) * 100);
-            setCurrentPage(progress);
+            setCurrentPage(Math.ceil((currentLocation / totalLocations) * 100));
             setTotalPages(100);
-            updateBookProgress(book.id, progress, loc);
           }
         }
       }
     } catch (error) {
       console.error('Error processing location:', error);
+      // Don't update state if there's an error
     }
   };
 
@@ -197,6 +187,7 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
               rendition.display(location);
             } catch (error) {
               console.error('Error displaying location:', error);
+              // Reset location if invalid
               setLocation(null);
             }
           }
@@ -210,10 +201,8 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
           const currentLocation = rendition.book.locations.locationFromCfi(location.start.cfi);
           const totalLocations = rendition.book.locations.length();
           if (typeof currentLocation === 'number' && typeof totalLocations === 'number') {
-            const progress = Math.ceil((currentLocation / totalLocations) * 100);
-            setCurrentPage(progress);
+            setCurrentPage(Math.ceil((currentLocation / totalLocations) * 100));
             setTotalPages(100);
-            updateBookProgress(book.id, progress, location.start.cfi);
           }
         }
       } catch (error) {
@@ -515,7 +504,6 @@ export const Reader: React.FC<ReaderProps> = ({ book, onClose }) => {
                             >
                               <Pencil className="w-4 h-4" />
                             </button>
-                            
                             <button
                               onClick={() => removeNote(book.id, note.id)}
                               className="text-gray-400 hover:text-red-500 dark:text-gray-500 dark:hover:text-red-400"
