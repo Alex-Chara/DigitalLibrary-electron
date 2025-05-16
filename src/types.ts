@@ -7,6 +7,7 @@ export interface Book {
   dateAdded: Date;
   lastRead?: Date;
   progress: number;
+  lastLocation?: string | null;
   tags: string[];
   file: string;
   genre?: string;
@@ -17,7 +18,7 @@ export interface Note {
   id: string;
   content: string;
   createdAt: Date;
-  location?: string; // For EPUB location or PDF page number
+  location?: string;
 }
 
 export type SortOption = 'title' | 'author' | 'dateAdded' | 'genre';
@@ -39,6 +40,7 @@ export interface LibraryState {
   setSearchQuery: (query: string) => void;
   setSortBy: (sortBy: SortOption) => void;
   setSortDirection: (direction: SortDirection) => void;
+  updateBookProgress: (bookId: string, progress: number, lastLocation?: string | null) => void;
   addNote: (bookId: string, note: Omit<Note, 'id' | 'createdAt'>) => void;
   removeNote: (bookId: string, noteId: string) => void;
   editNote: (bookId: string, noteId: string, content: string) => void;
