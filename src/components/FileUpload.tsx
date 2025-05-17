@@ -4,21 +4,23 @@ import { useLibraryStore } from '../store';
 import { processEpub, processPdf } from '../utils/fileProcessors';
 import * as PDFJS from 'pdfjs-dist';
 
+const { ipcRenderer } = window.require('electron');
+
 PDFJS.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS.version}/pdf.worker.min.js`;
 
 export const FileUpload: React.FC = () => {
   const { addBook } = useLibraryStore();
 
-  const processFiles = async (files: FileList) => {
-    for (const file of files) {
+  const processFiles = async (filePaths: string[]) => {
+    for (const filePath of filePaths) {
       try {
-        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        const fileExtension = filePath.split('.').pop()?.toLowerCase();
         let bookData;
         
         if (fileExtension === 'epub') {
-          bookData = await processEpub(file);
+          bookData = await processEpub(filePath);
         } else if (fileExtension === 'pdf') {
-          bookData = await processPdf(file);
+          bookData = await processPdf(filePath);
         } else {
           continue;
         }
@@ -27,58 +29,45 @@ export const FileUpload: React.FC = () => {
           addBook(bookData);
         }
       } catch (error) {
-        console.error('Ошибка обработки файла:', error);
-        alert(`Ошибка обработки ${file.name}: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+        console.error('Error processing file:', error);
+        alert(`Error processing ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   };
 
-  const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-    
-    await processFiles(files);
-    event.target.value = '';
+  const handleFileUpload = useCallback(async () => {
+    const filePaths = await ipcRenderer.invoke('open-file-dialog');
+    if (filePaths.length > 0) {
+      await processFiles(filePaths);
+    }
   }, [addBook]);
 
-  const handleFolderUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files) return;
-    
-    await processFiles(files);
-    event.target.value = '';
+  const handleFolderUpload = useCallback(async () => {
+    const folderPaths = await ipcRenderer.invoke('open-folder-dialog');
+    if (folderPaths.length > 0) {
+      // Process all files in the selected folder
+      const filePaths = await ipcRenderer.invoke('get-files-in-folder', folderPaths[0]);
+      await processFiles(filePaths);
+    }
   }, [addBook]);
 
   return (
     <div className="flex gap-2">
-      <div className="relative">
-        <input
-          type="file"
-          accept=".epub,.pdf"
-          multiple
-          onChange={handleFileUpload}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
-        <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-          <Upload className="w-5 h-5" />
-          <span>Импорт файлов</span>
-        </button>
-      </div>
+      <button
+        onClick={handleFileUpload}
+        className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+      >
+        <Upload className="w-5 h-5" />
+        <span>Import Files</span>
+      </button>
 
-      <div className="relative">
-        <input
-          type="file"
-          webkitdirectory=""
-          directory=""
-          multiple
-          onChange={handleFolderUpload}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        />
-        <button className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-          <Folder className="w-5 h-5" />
-          <span>Импорт папки</span>
-        </button>
-      </div>
+      <button
+        onClick={handleFolderUpload}
+        className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+      >
+        <Folder className="w-5 h-5" />
+        <span>Import Folder</span>
+      </button>
     </div>
   );
 };

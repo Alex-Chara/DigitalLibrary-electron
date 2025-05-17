@@ -2,23 +2,21 @@ import { v4 as uuidv4 } from 'uuid';
 import { Book } from '../types';
 import * as PDFJS from 'pdfjs-dist';
 import ePub from 'epubjs';
+const fs = window.require('fs');
+const path = window.require('path');
 
-// Set up PDF.js worker
 PDFJS.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
   import.meta.url
 ).toString();
 
-export async function processEpub(file: File): Promise<Book> {
+export async function processEpub(filePath: string): Promise<Book> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    
-    reader.onload = async (e) => {
-      try {
-        const buffer = e.target?.result as ArrayBuffer;
-        const book = ePub(buffer);
-        
-        await book.loaded.metadata;
+    try {
+      const buffer = fs.readFileSync(filePath);
+      const book = ePub(buffer);
+      
+      book.loaded.metadata.then(async () => {
         const metadata = book.package.metadata;
         const coverUrl = await book.coverUrl();
 
@@ -31,31 +29,27 @@ export async function processEpub(file: File): Promise<Book> {
           dateAdded: new Date(),
           progress: 0,
           tags: [],
-          file: URL.createObjectURL(file)
+          file: filePath,
+          notes: []
         };
 
         resolve(bookData);
-      } catch (error) {
-        reject(new Error(`Error processing EPUB file: ${error instanceof Error ? error.message : 'Unknown error'}`));
-      }
-    };
-
-    reader.onerror = () => reject(new Error('Error reading EPUB file'));
-    reader.readAsArrayBuffer(file);
+      }).catch(reject);
+    } catch (error) {
+      reject(new Error(`Error processing EPUB file: ${error instanceof Error ? error.message : 'Unknown error'}`));
+    }
   });
 }
 
-export async function processPdf(file: File): Promise<Book> {
+export async function processPdf(filePath: string): Promise<Book> {
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await PDFJS.getDocument({ data: arrayBuffer }).promise;
+    const buffer = fs.readFileSync(filePath);
+    const pdf = await PDFJS.getDocument(new Uint8Array(buffer)).promise;
     const metadata = await pdf.getMetadata().catch(() => ({}));
     
-    // Get the first page for thumbnail
     const firstPage = await pdf.getPage(1);
     const viewport = firstPage.getViewport({ scale: 1.0 });
     
-    // Create canvas for thumbnail
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     canvas.width = viewport.width;
@@ -66,19 +60,19 @@ export async function processPdf(file: File): Promise<Book> {
       viewport: viewport
     }).promise;
     
-    // Generate thumbnail URL
     const thumbnailUrl = canvas.toDataURL('image/jpeg', 0.5);
 
     const book: Book = {
       id: uuidv4(),
-      title: metadata?.info?.Title || file.name.replace('.pdf', ''),
+      title: metadata?.info?.Title || path.basename(filePath, '.pdf'),
       author: metadata?.info?.Author || 'Unknown Author',
       cover: thumbnailUrl,
       format: 'pdf',
       dateAdded: new Date(),
       progress: 0,
       tags: [],
-      file: URL.createObjectURL(file)
+      file: filePath,
+      notes: []
     };
 
     return book;
